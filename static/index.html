@@ -1,0 +1,94 @@
+<!-- static/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cartoon Line Art Generator</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    img { border: 1px solid #ccc; margin-bottom: 10px; }
+    #alert {
+      padding: 10px;
+      background-color: #f44336;
+      color: white;
+      display: none;
+      margin-top: 20px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Upload a Photo (Portrait / Pet)</h2>
+  <input type="file" id="upload" />
+  <div id="alert"></div>
+
+  <br><br>
+  <h3>Original Image:</h3>
+  <img id="original" width="300" />
+
+  <h3>Black & White Line Art:</h3>
+  <img id="bw" width="300" />
+  <br>
+  <a id="bwDownload" href="#" download="lineart_bw.png">Download B/W</a>
+
+  <h3>Colored Cartoon Version:</h3>
+  <img id="color" width="300" />
+  <br>
+  <a id="colorDownload" href="#" download="lineart_color.png">Download Colored</a>
+
+  <script>
+    const upload = document.getElementById("upload");
+    const original = document.getElementById("original");
+    const bw = document.getElementById("bw");
+    const color = document.getElementById("color");
+    const bwDownload = document.getElementById("bwDownload");
+    const colorDownload = document.getElementById("colorDownload");
+    const alertBox = document.getElementById("alert");
+
+    upload.addEventListener("change", async () => {
+      const file = upload.files[0];
+      if (!file) return;
+
+      alertBox.style.display = "none";
+      bw.src = "";
+      color.src = "";
+      bwDownload.href = "#";
+      colorDownload.href = "#";
+
+      original.src = URL.createObjectURL(file);
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch("/upload/", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+          alertBox.textContent = "❌ " + data.error;
+          alertBox.style.display = "block";
+          return;
+        }
+
+        if (!data.bw_url || !data.color_url) {
+          alertBox.textContent = "❌ Unexpected server response.";
+          alertBox.style.display = "block";
+          return;
+        }
+
+        bw.src = data.bw_url;
+        color.src = data.color_url;
+        bwDownload.href = data.bw_url;
+        colorDownload.href = data.color_url;
+
+      } catch (err) {
+        alertBox.textContent = "❌ Upload failed. Please try again.";
+        alertBox.style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>
